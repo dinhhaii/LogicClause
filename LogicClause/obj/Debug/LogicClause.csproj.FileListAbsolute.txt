@@ -1,0 +1,7 @@
+C:\Users\Dinh Hai\Desktop\LogicClause\LogicClause\bin\Debug\LogicClause.exe.config
+C:\Users\Dinh Hai\Desktop\LogicClause\LogicClause\bin\Debug\LogicClause.exe
+C:\Users\Dinh Hai\Desktop\LogicClause\LogicClause\bin\Debug\LogicClause.pdb
+C:\Users\Dinh Hai\Desktop\LogicClause\LogicClause\obj\Debug\LogicClause.csprojAssemblyReference.cache
+C:\Users\Dinh Hai\Desktop\LogicClause\LogicClause\obj\Debug\LogicClause.csproj.CoreCompileInputs.cache
+C:\Users\Dinh Hai\Desktop\LogicClause\LogicClause\obj\Debug\LogicClause.exe
+C:\Users\Dinh Hai\Desktop\LogicClause\LogicClause\obj\Debug\LogicClause.pdb
