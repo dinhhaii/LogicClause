@@ -41,6 +41,20 @@ namespace LogicClause
             return result;
         }
 
+        //Đếm số lượng kí tự 'character' xuất hiện trong chuỗi
+        static int countCharacter(string str, char character)
+        {
+            int count = 0;
+            for(int i = 0; i < str.Length; i++)
+            {
+                if(character == str[i])
+                {
+                    count++;
+                }
+            }
+            return count;
+        }
+
         // Modus Ponens
         // a->b
         // a
@@ -50,7 +64,7 @@ namespace LogicClause
         {
             string result = "", a = "", b = "";
 
-            //Tìm kiếm vị trí dấu "->"===================================================
+            //Tìm kiếm vị trí dấu "->"
             List<int> indexList = findCharacter(c1, '>');
             for (int i = 0; i < indexList.Count; i++)
             {
@@ -85,7 +99,7 @@ namespace LogicClause
         {
             string result = "", a = "", b = "";
 
-            //Tìm kiếm vị trí dấu "->"===================================================
+            //Tìm kiếm vị trí dấu "->"
             List<int> indexList = findCharacter(c1, '>');
             for (int i = 0; i < indexList.Count; i++)
             {
@@ -150,7 +164,7 @@ namespace LogicClause
         {
             string result = "", a = "", b1 = "", b2 = "", c = "";
 
-            //Tìm kiếm vị trí dấu "->" ===================================================
+            //Tìm kiếm vị trí dấu "->" 
 
             List<int> indexList1 = findCharacter(c1, '>');
             List<int> indexList2 = findCharacter(c2, '>');
@@ -358,28 +372,34 @@ namespace LogicClause
         {
             string result = "", a = "", b = "";
 
+            //Tìm vị trí xuất hiện "."
             List<int> indexList = findCharacter(c1, '.');
+
             for (int i = 0; i < indexList.Count; i++)
             {
                 int index = indexList[i];
                 a = c1.Substring(0, index);
                 b = c1.Substring(index + 1, c1.Length - index - 1);
 
-                a = removeParentheses(a);
-                b = removeParentheses(b);
+                //Kiểm tra vị trí "." có phù hợp
+                if(countCharacter(a,'(') == countCharacter(a,')') && countCharacter(b, '(') == countCharacter(b, ')'))
+                {
+                    a = removeParentheses(a);
+                    b = removeParentheses(b);
 
-                if (id == 1)
-                {
-                    result = a;
-                }
-                else
-                {
-                    result = b;
-                }
-                if (result != "")
-                {
-                    return result;
-                }
+                    if (id == 1)
+                    {
+                        result = a;
+                    }
+                    else
+                    {
+                        result = b;
+                    }
+                    if (result != "")
+                    {
+                        return result;
+                    }
+                }               
             }
             return result;
         }
@@ -412,9 +432,9 @@ namespace LogicClause
         }
 
         //Kiểm tra các mệnh đề có nhập đúng 
-        static bool checkInput(string[] clause)
+        static bool checkInput(List<string> clause)
         {
-            for(int i = 0; i < clause.Length; i++)
+            for(int i = 0; i < clause.Count; i++)
             {
                 for(int j = 0; j < clause[i].Length - 1; j++)
                 {
@@ -439,12 +459,69 @@ namespace LogicClause
             return true;
         }
 
-        static void handleClause(string[] clause,string result)
+        static void handleClause(List<string> clause,string result)
         {
             if (!checkInput(clause))
             {
                 Console.WriteLine("Syntax Error");
                 return;
+            }
+
+            for(int i = 0; i < clause.Count; i++)
+            {
+                //Xử lý hàm SIM
+                string SIMResult1 = "", SIMResult2 = "";
+                SIMResult1 = SIM(clause[i], 1);
+                SIMResult2 = SIM(clause[i], 2);
+                if(SIMResult1 != "")
+                {
+                    clause.Add(SIMResult1);
+                    clause.Add(SIMResult2);
+                }
+
+                for (int j = 0; j < clause.Count; j++)
+                {
+                    string tempResult = "";
+                    int select = 0;
+                    //Xử lý các lệnh còn lại
+                    while (tempResult == "")
+                    {
+                        select++;
+                        switch (select)
+                        {
+                            case 1: tempResult = MP(clause[i], clause[j]); break;
+                            case 2: tempResult = MT(clause[i], clause[j]); break;
+                            case 3: tempResult = DS(clause[i], clause[j]); break;
+                            case 4: tempResult = CON(clause[i], clause[j]); break;
+                            case 5: tempResult = HS(clause[i], clause[j]); break;
+                            case 6: break;
+                            default: tempResult = "-1"; break;
+                        }
+                        
+                    }
+                    if (tempResult != "" && tempResult != "-1")
+                    {
+                        clause.Add(tempResult);
+                    }
+
+                    for (int k = 0; k < clause.Count; k++)
+                    {
+                        string DILResult = "";
+                        DILResult = DIL(clause[i], clause[j], clause[k]);
+                        if (tempResult != "")
+                        {
+                            clause.Add(DILResult);
+                        }
+                    }
+                }
+            }
+
+            for(int i = 0; i < clause.Count; i++)
+            {
+                if(clause[i] == result)
+                {
+                    Console.WriteLine("Right");
+                }
             }
         }
 
@@ -454,13 +531,23 @@ namespace LogicClause
             string b = "-(a>b)";
             string c = "(a.b)+m";
 
-            string[] t = new string[] { "(-(a>b))>(-(c.d))", "-(a>b)>(m>f)" };
+            List<string> t = new List<string>();
+            t.Add("A+((-B)+(-C))");
+            t.Add("(E.F)>D");
+            t.Add("-A");
+            t.Add("E.F");
+
+            string result = "-B";
+
             if (checkInput(t))
             {
                 Console.Write("HELLO");
             }
-            string result = MP(a,b);
-            Console.WriteLine(result);
+
+            handleClause(t, result);
+
+            //string result = MP(a,b);
+            //Console.WriteLine(result);
             Console.ReadKey();
         }
     }

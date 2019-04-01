@@ -1,4 +1,4 @@
 ﻿# LogicClause
 
-- Chưa sửa tìm vị trí dấu suy ra (->)
-- Chưa sửa hàm SIM
+- Chưa xử lý hàm SIM (vị trí dấu ".")
+- Hoán vị mệnh đề
