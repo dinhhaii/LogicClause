@@ -12,17 +12,41 @@ namespace LogicClause
         //4 trường hợp: (-b); (-(a.b)); (a.b); b; => -b; -(a.b); a.b; b;
         static string removeParentheses(string a)
         {
-            int firstIndex = a.IndexOf('(');          
-            if (firstIndex != -1)
+            int firstIndex = a.IndexOf('('); //Vị trí dấu ngoặc đầu tiên
+            int lastIndex = a.LastIndexOf(')'); //Vị trí dấu ngoặc cuối cùng
+
+            if (firstIndex != -1 && lastIndex != -1)
             {
-                a = a.Remove(firstIndex, 1);
+                int[] openParentheses = new int[10]; //Danh sách vị trí dấu mở ngoặc '('
+                int[] closeParentheses = new int[10]; //Danh sách vị trí dấu đóng ngoặc ')'
+                int count = 0; //Số lượng dấu ngoặc '(' hoặc ')'
+                int flag = 0; //Đánh dấu vị trí dấu ngoặc '(' chưa được sử dụng
+
+                for(int i = firstIndex; i < a.Length; i++)
+                {
+                    if(a[i] == '(')
+                    {
+                        openParentheses[count] = i;               
+                        flag = count; //Đánh dấu lại vị trí dấu ngoặc '(' cuối cùng xuất hiện
+                        count++;
+                    }
+                    else if(a[i] == ')')
+                    {
+                        while(closeParentheses[flag] != 0) //Chọn vị trí dấu ngoặc ')' ứng với dấu '(' tiếp theo
+                        {
+                            flag--;
+                        }
+                        closeParentheses[flag] = i;
+                    }
+                }
+
+                if(closeParentheses[0] == lastIndex && firstIndex == 0)
+                {
+                    a = a.Remove(firstIndex, 1);
+                    a = a.Remove(lastIndex-1, 1);
+                }                
             }
 
-            int lastIndex = a.LastIndexOf(')');
-            if (lastIndex != -1)
-            {
-                a = a.Remove(lastIndex, 1);
-            }
             return a;
         }
 
@@ -112,20 +136,25 @@ namespace LogicClause
                 a = removeParentheses(a);
                 b = removeParentheses(b);
 
+                //Kiểm tra b và c2 có dấu trừ ở đầu
+                bool isNegative = false;
+
                 //Xóa dấu "-" của b
                 if (b[0] == '-')
                 {
                     b = b.Replace("-", string.Empty);
                     b = removeParentheses(b);
+                    isNegative = true;
                 }
                 else if (c2[0] == '-') //hoặc xóa dấu "-" của c2
                 {
                     c2 = c2.Replace("-", string.Empty);
                     c2 = removeParentheses(c2);
+                    isNegative = true;
                 }
 
                 //Trả về kết quả
-                if (b == c2)
+                if (b == c2 && isNegative)
                 {
                     if (a.Length == 1) //a
                     {
@@ -222,22 +251,25 @@ namespace LogicClause
         {
             string result = "";
 
-            if(c1.Length == 1)
+            if (c1 != c2)
             {
-                result += c1;
-            }
-            else
-            {
-                result += "(" + c1 + ")";
-            }
+                if (c1.Length == 1)
+                {
+                    result += c1;
+                }
+                else
+                {
+                    result += "(" + c1 + ")";
+                }
 
-            if (c2.Length == 1)
-            {
-                result += "." + c2;
-            }
-            else
-            {
-                result += ".(" + c2 + ")";
+                if (c2.Length == 1)
+                {
+                    result += "." + c2;
+                }
+                else
+                {
+                    result += ".(" + c2 + ")";
+                }
             }
             return result;
         }
@@ -328,34 +360,44 @@ namespace LogicClause
 
                 /*4 trường hợp: (-b); (-(a.b)); (a.b); b; => -b; -(a.b); a.b; b;*/
 
-
                 if (c2[0] == '-')
                 {
                     c2 = c2.Replace("-", string.Empty);
                     c2 = removeParentheses(c2);
+                    //So sánh kết quả
+                    if (b == c2)
+                    {
+                        result += tempa;
+                    }
+                    else if (a == c2)
+                    {
+                        result += tempb;
+                    }
                 }
-                else
+                else if(b[0] == '-' || a[0] == '-')
                 {
                     if (b[0] == '-')
                     {
                         b = b.Replace("-", string.Empty);
                         b = removeParentheses(b);
+                        //So sánh kết quả
+                        if (b == c2)
+                        {
+                            result += tempa;
+                        }
                     }
                     if (a[0] == '-')
                     {
                         a = a.Replace("-", string.Empty);
                         a = removeParentheses(a);
+                        //So sánh kết quả
+                        if (a == c2)
+                        {
+                            result += tempb;
+                        }
                     }
                 }
 
-                if (b == c2)
-                {
-                    result += tempa;
-                }
-                else if (a == c2)
-                {
-                    result += tempb;
-                }
                 if(result != "")
                 {
                     return result;
@@ -473,10 +515,29 @@ namespace LogicClause
                 string SIMResult1 = "", SIMResult2 = "";
                 SIMResult1 = SIM(clause[i], 1);
                 SIMResult2 = SIM(clause[i], 2);
+
+                //Nếu có kết quả
                 if(SIMResult1 != "")
                 {
-                    clause.Add(SIMResult1);
-                    clause.Add(SIMResult2);
+                    if (!clause.Any(item => item == SIMResult1)) //Nếu kết quả không tồn tại trong tập các mệnh đề
+                    {
+                        clause.Add(SIMResult1);
+                        Console.WriteLine("{0}. {1} | SIM {2}",clause.Count - 1,SIMResult1, i);
+                        if (SIMResult1 == result)
+                        {
+                            return;
+                        }
+                    }
+                    if (!clause.Any(item => item == SIMResult2)) //Nếu kết quả không tồn tại trong tập các mệnh đề
+                    {
+                        clause.Add(SIMResult2);
+                        Console.WriteLine("{0}. {1} | SIM {2}", clause.Count - 1, SIMResult2,i);
+                        if (SIMResult2 == result)
+                        {
+                            return;
+                        }
+                    }
+                    
                 }
 
                 for (int j = 0; j < clause.Count; j++)
@@ -492,7 +553,8 @@ namespace LogicClause
                             case 1: tempResult = MP(clause[i], clause[j]); break;
                             case 2: tempResult = MT(clause[i], clause[j]); break;
                             case 3: tempResult = DS(clause[i], clause[j]); break;
-                            case 4: tempResult = CON(clause[i], clause[j]); break;
+                            case 4: //tempResult = CON(clause[i], clause[j]); 
+                                break;
                             case 5: tempResult = HS(clause[i], clause[j]); break;
                             case 6: break;
                             default: tempResult = "-1"; break;
@@ -501,16 +563,46 @@ namespace LogicClause
                     }
                     if (tempResult != "" && tempResult != "-1")
                     {
-                        clause.Add(tempResult);
+                        //Kiểm tra kết quả có tồn tại trong các mệnh đề ban đầu
+                        if (!clause.Any(item => item == tempResult))
+                        {
+                            clause.Add(tempResult);
+                            Console.Write("{0}. {1}", clause.Count - 1, tempResult);
+                            switch (select)
+                            {
+                                case 1: Console.WriteLine(" | MP {0},{1}", i, j); break;
+                                case 2: Console.WriteLine(" | MT {0},{1}", i, j); break;
+                                case 3: Console.WriteLine(" | DS {0},{1}", i, j); break;
+                                case 4: //Console.WriteLine(" | CON {0},{1}", i, j);
+                                    break;
+                                case 5: Console.WriteLine(" | HS {0},{1}", i, j); break;
+                                case 6: break;
+                            }
+                            if(tempResult == result)
+                            {
+                                return;
+                            }
+                            i = 0; j = 0;
+                        }
                     }
 
                     for (int k = 0; k < clause.Count; k++)
                     {
                         string DILResult = "";
                         DILResult = DIL(clause[i], clause[j], clause[k]);
-                        if (tempResult != "")
+                        if (DILResult != "")
                         {
-                            clause.Add(DILResult);
+                            if (!clause.Any(item => item == DILResult))
+                            {
+                                clause.Add(DILResult);
+                                Console.Write("{0}. {1} | DIL {2},{3},{4}",clause.Count - 1,DILResult,i,j,k);
+                                i = 0; j = 0;k = 0;
+                            }
+                            
+                        }
+                        if (DILResult == result)
+                        {
+                            return;
                         }
                     }
                 }
@@ -527,45 +619,24 @@ namespace LogicClause
 
         static void Main(string[] args)
         {
-            string a = "(-(a>b))>-(c.d)";
-            string b = "-(a>b)";
-            string c = "(a.b)+m";
 
             List<string> t = new List<string>();
-            t.Add("A+((-B)+(-C))");
+            t.Add("A+(-B)+(-D)");
             t.Add("(E.F)>D");
             t.Add("-A");
             t.Add("E.F");
 
             string result = "-B";
 
-            if (checkInput(t))
+            for (int i = 0; i < t.Count; i++)
             {
-                Console.Write("HELLO");
+                Console.WriteLine(i.ToString() + ". " + t[i]);
             }
+            Console.WriteLine("------------");
 
             handleClause(t, result);
 
-            //string result = MP(a,b);
-            //Console.WriteLine(result);
             Console.ReadKey();
         }
     }
 }
-
-//string tempa = a;
-//int length = b.Length;
-//for(int i = 0; i < length; i++)
-//{
-//    int temp = a.LastIndexOf(b);
-//    if (temp != -1)
-//    {
-//        Console.WriteLine(tempa.Substring(temp,tempa.Length - temp));
-//        break;
-//    }
-//    if (b.Length >= 1)
-//    {
-//        b = b.Substring(0, b.Length - 1);
-//    }
-//}
-//string result = DIL(a, b, c);
