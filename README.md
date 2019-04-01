@@ -1,4 +1,5 @@
 ﻿# LogicClause
 
-- Chưa xử lý hàm SIM (vị trí dấu ".")
-- Hoán vị mệnh đề
+- Chưa hoán vị mệnh đề
+- Chưa ADD
+- Chưa sử dụng CON
