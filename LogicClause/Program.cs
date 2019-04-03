@@ -8,9 +8,8 @@ namespace LogicClause
 {
     class Program
     {
-        //Xóa dấu ngoặc đơn
-        //4 trường hợp: (-b); (-(a.b)); (a.b); b; => -b; -(a.b); a.b; b;
-        static string removeParentheses(string a)
+        //Kiểm tra dấu ngoặc đơn có bao bọc cả mệnh đề (VD: ((a+b)>c) --> true | (a+b)>c --> false)
+        static bool checkParentheses(string a)
         {
             int firstIndex = a.IndexOf('('); //Vị trí dấu ngoặc đầu tiên
             int lastIndex = a.LastIndexOf(')'); //Vị trí dấu ngoặc cuối cùng
@@ -22,17 +21,17 @@ namespace LogicClause
                 int count = 0; //Số lượng dấu ngoặc '(' hoặc ')'
                 int flag = 0; //Đánh dấu vị trí dấu ngoặc '(' chưa được sử dụng
 
-                for(int i = firstIndex; i < a.Length; i++)
+                for (int i = firstIndex; i < a.Length; i++)
                 {
-                    if(a[i] == '(')
+                    if (a[i] == '(')
                     {
-                        openParentheses[count] = i;               
+                        openParentheses[count] = i;
                         flag = count; //Đánh dấu lại vị trí dấu ngoặc '(' cuối cùng xuất hiện
                         count++;
                     }
-                    else if(a[i] == ')')
+                    else if (a[i] == ')')
                     {
-                        while(closeParentheses[flag] != 0) //Chọn vị trí dấu ngoặc ')' ứng với dấu '(' tiếp theo
+                        while (closeParentheses[flag] != 0) //Chọn vị trí dấu ngoặc ')' ứng với dấu '(' tiếp theo
                         {
                             flag--;
                         }
@@ -40,11 +39,25 @@ namespace LogicClause
                     }
                 }
 
-                if(closeParentheses[0] == lastIndex && firstIndex == 0)
+                if (closeParentheses[0] == lastIndex && firstIndex == 0)
                 {
-                    a = a.Remove(firstIndex, 1);
-                    a = a.Remove(lastIndex-1, 1);
-                }                
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        //Xóa dấu ngoặc đơn
+        //4 trường hợp: (-b); (-(a.b)); (a.b); b; => -b; -(a.b); a.b; b;
+        static string removeParentheses(string a)
+        {
+            int firstIndex = a.IndexOf('('); //Vị trí dấu ngoặc đầu tiên
+            int lastIndex = a.LastIndexOf(')'); //Vị trí dấu ngoặc cuối cùng
+
+            if(checkParentheses(a)){
+                a = a.Remove(firstIndex, 1);
+                a = a.Remove(lastIndex - 1, 1);
             }
 
             return a;
@@ -494,18 +507,67 @@ namespace LogicClause
             List<string> result = new List<string>();
             string a = "", b = "";
             List<int> indexList = findCharacter(clause, '.');
+            List<int> indexToSplitList = new List<int>();
+
             for (int i = 0; i < indexList.Count; i++)
             {
                 int index = indexList[i];
-                //Tách a và b từ c1
+                //Tách a và b từ clause
                 a = clause.Substring(0, index);
                 b = clause.Substring(index + 1, clause.Length - index - 1);
 
                 //Kiểm tra nếu số lượng dấu '(' = số lượng dấu ')' thì xử lý
                 if (countCharacter(a, '(') == countCharacter(a, ')') && countCharacter(b, '(') == countCharacter(b, ')'))
                 {
+                    //1. a.b = b.a
                     string temp = b + "." + a;
-                    result.Add(temp);
+                    if (!result.Any(item => item == temp)) //Kiểm tra xem đã tồn tại 
+                    {
+                        result.Add(temp);
+                    }
+
+                    //2. (a1.a2).b = a1.(a2.b)
+                    if(indexToSplitList.Count > 0)
+                    {
+                        for(int j = 0; j < indexToSplitList.Count; j++)
+                        {
+                            //Tách chuỗi a thành 2 chuỗi
+                            int indexOld = indexToSplitList[j];
+                            //Kiểm tra dấu ngoặc đơn có bao ngoài mệnh đề
+                            if (checkParentheses(a))
+                            {
+                                a = removeParentheses(a);
+                                string tempa1 = a.Substring(0, indexOld);
+                                string tempa2 = a.Substring(indexOld + 1, a.Length - indexOld - 1);
+                                if (countCharacter(tempa1, '(') == countCharacter(tempa1, ')') && countCharacter(tempa2, '(') == countCharacter(tempa2, ')'))
+                                {
+                                    temp = tempa1 + ".(" + tempa2 + "." + b + ")";
+                                    result.Add(temp);
+                                }
+                            }
+                        }
+                    }
+
+                    //3. a.(b1+b2) = (a.b1)+(a.b2)
+                    if (checkParentheses(b))
+                    {
+                        b = removeParentheses(b);
+                        List<int> indexOrList = findCharacter(b, '+');
+
+                        for(int j = 0; j < indexOrList.Count; j++)
+                        {
+                            string tempb1 = b.Substring(0, indexOrList[j]);
+                            string tempb2 = b.Substring(indexOrList[j] + 1, b.Length - indexOrList[j] - 1);
+
+                            if (countCharacter(tempb1, '(') == countCharacter(tempb1, ')') && countCharacter(tempb2, '(') == countCharacter(tempb2, ')'))
+                            {
+                                temp = string.Format("({0}.{1})+({2}.{3})", a, tempb1, a, tempb2);
+                                result.Add(temp);
+                            }
+                        }
+                    }
+
+                    indexToSplitList.Add(index);
                 }
             }
             return result;
@@ -555,6 +617,8 @@ namespace LogicClause
                 string SIMResult1 = "", SIMResult2 = "";
                 SIMResult1 = SIM(clause[i], 1);
                 SIMResult2 = SIM(clause[i], 2);
+
+                //Xử lý hàm EQ ==========================================================
 
                 //Nếu có kết quả
                 if(SIMResult1 != "")
@@ -674,8 +738,12 @@ namespace LogicClause
             }
             Console.WriteLine("------------");
 
-            handleClause(t, result);
-
+            //handleClause(t, result);
+            List<string> test = EQ("(a+b).(e+f)");
+            foreach (var item in test)
+            {
+                Console.WriteLine(item);
+            }
             Console.ReadKey();
         }
     }
