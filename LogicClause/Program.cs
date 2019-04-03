@@ -163,13 +163,13 @@ namespace LogicClause
                     //Xóa dấu "-" của b
                     if (b[0] == '-')
                     {
-                        b = b.Replace("-", string.Empty);
+                        b = b.Substring(1, b.Length - 1);
                         b = removeParentheses(b);
                         isNegative = true;
                     }
                     else if (c2[0] == '-') //hoặc xóa dấu "-" của c2
                     {
-                        c2 = c2.Replace("-", string.Empty);
+                        c2 = c2.Substring(1, c2.Length - 1);
                         c2 = removeParentheses(c2);
                         isNegative = true;
                     }
@@ -389,7 +389,7 @@ namespace LogicClause
 
                     if (c2[0] == '-')
                     {
-                        c2 = c2.Replace("-", string.Empty);
+                        c2 = c2.Substring(1, c2.Length - 1);
                         c2 = removeParentheses(c2);
                         //So sánh kết quả
                         if (b == c2)
@@ -405,7 +405,7 @@ namespace LogicClause
                     {
                         if (b[0] == '-')
                         {
-                            b = b.Replace("-", string.Empty);
+                            b = b.Substring(1, b.Length - 1);
                             b = removeParentheses(b);
                             //So sánh kết quả
                             if (b == c2)
@@ -415,7 +415,7 @@ namespace LogicClause
                         }
                         if (a[0] == '-')
                         {
-                            a = a.Replace("-", string.Empty);
+                            a = a.Substring(1, a.Length - 1);
                             a = removeParentheses(a);
                             //So sánh kết quả
                             if (a == c2)
@@ -506,12 +506,12 @@ namespace LogicClause
         {
             List<string> result = new List<string>();
             string a = "", b = "";
-            List<int> indexList = findCharacter(clause, '.');
-            List<int> indexToSplitList = new List<int>();
+            List<int> indexAndOfClauseList = findCharacter(clause, '.');
+            List<int> indexOrOfClauseList = findCharacter(clause, '+');
 
-            for (int i = 0; i < indexList.Count; i++)
+            for (int i = 0; i < indexAndOfClauseList.Count; i++)
             {
-                int index = indexList[i];
+                int index = indexAndOfClauseList[i];
                 //Tách a và b từ clause
                 a = clause.Substring(0, index);
                 b = clause.Substring(index + 1, clause.Length - index - 1);
@@ -519,57 +519,349 @@ namespace LogicClause
                 //Kiểm tra nếu số lượng dấu '(' = số lượng dấu ')' thì xử lý
                 if (countCharacter(a, '(') == countCharacter(a, ')') && countCharacter(b, '(') == countCharacter(b, ')'))
                 {
-                    //1. a.b = b.a
+                    //1.1) a.b = b.a =================================================================================================
                     string temp = b + "." + a;
                     if (!result.Any(item => item == temp)) //Kiểm tra xem đã tồn tại 
                     {
                         result.Add(temp);
                     }
 
-                    //2. (a1.a2).b = a1.(a2.b)
-                    if(indexToSplitList.Count > 0)
+                    //2.1) (a1.a2).b = a1.(a2.b) =================================================================================================
+                    if (checkParentheses(a)) //Kiểm tra dấu ngoặc đơn có bao ngoài mệnh đề a
                     {
-                        for(int j = 0; j < indexToSplitList.Count; j++)
+                        string tempa = removeParentheses(a);
+                        List<int> indexAndList = findCharacter(tempa, '.');
+
+                        for (int j = 0; j < indexAndList.Count; j++)
                         {
-                            //Tách chuỗi a thành 2 chuỗi
-                            int indexOld = indexToSplitList[j];
-                            //Kiểm tra dấu ngoặc đơn có bao ngoài mệnh đề
-                            if (checkParentheses(a))
+                            //Tách chuỗi a thành 2 chuỗi a1,a2
+                            string tempa1 = tempa.Substring(0, indexAndList[j]);
+                            string tempa2 = tempa.Substring(indexAndList[j] + 1, tempa.Length - indexAndList[j] - 1);
+                            if (countCharacter(tempa1, '(') == countCharacter(tempa1, ')') && countCharacter(tempa2, '(') == countCharacter(tempa2, ')'))
                             {
-                                a = removeParentheses(a);
-                                string tempa1 = a.Substring(0, indexOld);
-                                string tempa2 = a.Substring(indexOld + 1, a.Length - indexOld - 1);
-                                if (countCharacter(tempa1, '(') == countCharacter(tempa1, ')') && countCharacter(tempa2, '(') == countCharacter(tempa2, ')'))
+                                temp = string.Format("{0}.({1}.{2})", tempa1, tempa2, b);
+                                if (!result.Any(item => item == temp)) //Kiểm tra xem đã tồn tại 
                                 {
-                                    temp = tempa1 + ".(" + tempa2 + "." + b + ")";
                                     result.Add(temp);
                                 }
                             }
                         }
                     }
 
-                    //3. a.(b1+b2) = (a.b1)+(a.b2)
-                    if (checkParentheses(b))
+                    //3.1) a.(b1+b2) = (a.b1)+(a.b2) =================================================================================================
+                    if (checkParentheses(b)) //Kiểm tra dấu ngoặc đơn có bao ngoài mệnh đề b
                     {
-                        b = removeParentheses(b);
-                        List<int> indexOrList = findCharacter(b, '+');
+                        string tempb = removeParentheses(b);
+                        List<int> indexOrList = findCharacter(tempb, '+');
 
-                        for(int j = 0; j < indexOrList.Count; j++)
+                        for (int j = 0; j < indexOrList.Count; j++)
                         {
-                            string tempb1 = b.Substring(0, indexOrList[j]);
-                            string tempb2 = b.Substring(indexOrList[j] + 1, b.Length - indexOrList[j] - 1);
+                            //Tách chuỗi b thành 2 chuỗi b1,b2
+                            string tempb1 = tempb.Substring(0, indexOrList[j]);
+                            string tempb2 = tempb.Substring(indexOrList[j] + 1, tempb.Length - indexOrList[j] - 1);
 
                             if (countCharacter(tempb1, '(') == countCharacter(tempb1, ')') && countCharacter(tempb2, '(') == countCharacter(tempb2, ')'))
                             {
                                 temp = string.Format("({0}.{1})+({2}.{3})", a, tempb1, a, tempb2);
-                                result.Add(temp);
+                                if (!result.Any(item => item == temp)) //Kiểm tra xem đã tồn tại 
+                                {
+                                    result.Add(temp);
+                                }
                             }
                         }
                     }
 
-                    indexToSplitList.Add(index);
+                    //7.1) a.1=a =================================================================================================
+                    if (b == "1")
+                    {
+                        temp = removeParentheses(a);
+                        if (!result.Any(item => item == temp)) //Kiểm tra xem đã tồn tại 
+                        {
+                            result.Add(temp);
+                        }
+                    }
+
+                    //8.1) a.0=0 =================================================================================================
+                    if (b == "0")
+                    {
+                        temp = b;
+                        if (!result.Any(item => item == temp)) //Kiểm tra xem đã tồn tại 
+                        {
+                            result.Add(temp);
+                        }
+                    }
+
+                    //9.1) a.(-a)=0 =================================================================================================
+                    string tempRmva = removeParentheses(a);
+                    string tempRmvb = removeParentheses(b);
+
+                    if ((tempRmva[0] == '-' && removeParentheses(tempRmva.Substring(1, tempRmva.Length - 1)) == tempRmvb) || (tempRmvb[0] == '-' && removeParentheses(tempRmvb.Substring(1, tempRmvb.Length - 1)) == tempRmva)) //Kiểm tra a = -b hoặc -a = b
+                    {
+                        temp = "0";
+                        if (!result.Any(item => item == temp)) //Kiểm tra xem đã tồn tại 
+                        {
+                            result.Add(temp);
+                        }
+                    }
                 }
             }
+
+            for (int i = 0; i < indexOrOfClauseList.Count; i++)
+            {
+                int index = indexOrOfClauseList[i];
+                //Tách a và b từ clause
+                a = clause.Substring(0, index);
+                b = clause.Substring(index + 1, clause.Length - index - 1);
+
+                //Kiểm tra nếu số lượng dấu '(' = số lượng dấu ')' thì xử lý
+                if (countCharacter(a, '(') == countCharacter(a, ')') && countCharacter(b, '(') == countCharacter(b, ')'))
+                {
+                    //1.2) a+b = b+a =================================================================================================
+                    string temp = b + "+" + a;
+                    if (!result.Any(item => item == temp)) //Kiểm tra xem đã tồn tại 
+                    {
+                        result.Add(temp);
+                    }
+
+                    //2.2) (a1+a2)+b = a1+(a2+b) =================================================================================================
+                    if (checkParentheses(a)) //Kiểm tra dấu ngoặc đơn có bao ngoài mệnh đề a
+                    {
+                        string tempa = removeParentheses(a);
+                        List<int> indexAndList = findCharacter(tempa, '+');
+
+                        for (int j = 0; j < indexAndList.Count; j++)
+                        {
+                            //Tách chuỗi a thành 2 chuỗi a1,a2
+                            string tempa1 = tempa.Substring(0, indexAndList[j]);
+                            string tempa2 = tempa.Substring(indexAndList[j] + 1, tempa.Length - indexAndList[j] - 1);
+                            if (countCharacter(tempa1, '(') == countCharacter(tempa1, ')') && countCharacter(tempa2, '(') == countCharacter(tempa2, ')'))
+                            {
+                                temp = string.Format("{0}+({1}+{2})", tempa1, tempa2, b);
+                                if (!result.Any(item => item == temp)) //Kiểm tra xem đã tồn tại 
+                                {
+                                    result.Add(temp);
+                                }
+                            }
+                        }
+                    }
+
+                    //3.2) a+(b1.b2) = (a+b1).(a+b2) =================================================================================================
+                    if (checkParentheses(b)) //Kiểm tra dấu ngoặc đơn có bao ngoài mệnh đề b
+                    {
+                        string tempb = removeParentheses(b);
+                        List<int> indexOrList = findCharacter(tempb, '.');
+
+                        for (int j = 0; j < indexOrList.Count; j++)
+                        {
+                            //Tách chuỗi b thành 2 chuỗi b1,b2
+                            string tempb1 = tempb.Substring(0, indexOrList[j]);
+                            string tempb2 = tempb.Substring(indexOrList[j] + 1, tempb.Length - indexOrList[j] - 1);
+
+                            if (countCharacter(tempb1, '(') == countCharacter(tempb1, ')') && countCharacter(tempb2, '(') == countCharacter(tempb2, ')'))
+                            {
+                                temp = string.Format("({0}+{1}).({2}+{3})", a, tempb1, a, tempb2);
+                                if (!result.Any(item => item == temp)) //Kiểm tra xem đã tồn tại 
+                                {
+                                    result.Add(temp);
+                                }
+                            }
+                        }
+                    }
+
+                    //7.2) a+1=1 =================================================================================================
+                    if (b == "1")
+                    {
+                        temp = "1";
+                        if (!result.Any(item => item == temp)) //Kiểm tra xem đã tồn tại 
+                        {
+                            result.Add(temp);
+                        }
+                    }
+
+                    //8.2) a+0=a =================================================================================================
+                    if (b == "0")
+                    {
+                        temp = a;
+                        if (!result.Any(item => item == temp)) //Kiểm tra xem đã tồn tại 
+                        {
+                            result.Add(temp);
+                        }
+                    }
+
+                    //9.2) a+(-a)=1 =================================================================================================
+                    string tempRmva = removeParentheses(a);
+                    string tempRmvb = removeParentheses(b);
+
+                    if ((tempRmva[0] == '-' && removeParentheses(tempRmva.Substring(1, tempRmva.Length - 1)) == tempRmvb) || (tempRmvb[0] == '-' && removeParentheses(tempRmvb.Substring(1, tempRmvb.Length - 1)) == tempRmva)) //Kiểm tra a = -b hoặc -a = b
+                    {
+                        temp = "1";
+                        if (!result.Any(item => item == temp)) //Kiểm tra xem đã tồn tại 
+                        {
+                            result.Add(temp);
+                        }
+                    }
+                }
+            }
+
+            //5.1) -(-a)=a =================================================================================================
+            if (clause.IndexOf("-(-") == 0 || clause.IndexOf("--") == 0)
+            {
+                string temp = "";
+                if (clause.IndexOf("-(-") == 0)
+                {
+                    temp = clause.Substring(3, clause.Length - 3);
+                }
+                else if (clause.IndexOf("--") == 0)
+                {
+                    temp = clause.Substring(2, clause.Length - 2);
+                }
+                if(!result.Any(item => item == temp) && temp != "")
+                {
+                    result.Add(temp);
+                }
+            }
+
+            
+            if (clause.IndexOf('-') == 0)
+            {  
+                string temp = "";
+                //Loại bỏ dấu trừ và dấu ngoặc
+                string tempa = clause.Substring(1, clause.Length - 1);
+                tempa = removeParentheses(tempa);
+                List<int> indexAndList = findCharacter(tempa,'.');
+                List<int> indexOrList = findCharacter(tempa, '+');
+
+                //index - Lưu vị trí được tách thành các chuỗi 
+                int lengthStrAnd = 0;
+                int lengthStrOr = 0;
+
+                //Mảng chuỗi kết quả
+                Stack<string> resultSplitAnd = new Stack<string>();
+                Stack<string> resultSplitOr = new Stack<string>();
+
+                //5.2) -(a.b) = (-a)+(-b) =================================================================================================
+                //Duyệt các kí tự '.' được tìm thấy
+                for (int i = 0; i < indexAndList.Count; i++)
+                {
+                    //Tách 2 chuỗi tại vị trí dấu '.'
+                    string splitStr1 = tempa.Substring(0, indexAndList[i] - lengthStrAnd);
+                    string splitStr2 = tempa.Substring(indexAndList[i] - lengthStrAnd + 1, tempa.Length - indexAndList[i] + lengthStrAnd - 1);
+
+                    if (countCharacter(splitStr1, '(') == countCharacter(splitStr1, ')') && countCharacter(splitStr2, '(') == countCharacter(splitStr2, ')'))
+                    {
+                        lengthStrAnd = splitStr1.Length + 1;
+
+                        //Xóa ngoặc đơn
+                        if (splitStr1 != removeParentheses(splitStr1))
+                        {
+                            splitStr1 = removeParentheses(splitStr1);
+                            lengthStrAnd += 2;
+                        }
+                        if (splitStr2 != removeParentheses(splitStr2))
+                        {
+                            splitStr2 = removeParentheses(splitStr2);
+                            lengthStrAnd += 2;
+                        }
+
+                        //Lấy phần tử được tách chuỗi trước đó 
+                        if(resultSplitAnd.Count != 0)
+                        {
+                            resultSplitAnd.Pop();
+                        }
+                        
+                        //Thêm các phần tử mới được tách
+                        resultSplitAnd.Push(splitStr1);
+                        resultSplitAnd.Push(splitStr2);
+
+                        tempa = splitStr2;
+                        
+                    }
+                }
+                foreach(var item in resultSplitAnd)
+                {
+                    if(item.Length!= 1)
+                    {
+                        temp = "(-(" + item + "))+" + temp;
+                    }
+                    else
+                    {
+                        temp = "(-" + item + ")+" + temp;
+                    }
+                }
+
+                if (temp != "")
+                {
+                    temp = temp.Substring(0, temp.Length - 1);
+
+                    if (!result.Any(item => item == temp))
+                    {
+                        result.Add(temp);
+                    }
+                }
+
+                //5.3) -(a+b) = (-a).(-b) =================================================================================================
+                //Duyệt các kí tự '+' được tìm thấy
+                for (int i = 0; i < indexOrList.Count; i++)
+                {
+                    //Tách 2 chuỗi tại vị trí dấu '+'
+                    string splitStr1 = tempa.Substring(0, indexOrList[i] - lengthStrOr);
+                    string splitStr2 = tempa.Substring(indexOrList[i] - lengthStrOr + 1, tempa.Length - indexOrList[i] + lengthStrOr - 1);
+
+                    if (countCharacter(splitStr1, '(') == countCharacter(splitStr1, ')') && countCharacter(splitStr2, '(') == countCharacter(splitStr2, ')'))
+                    {
+                        lengthStrOr = splitStr1.Length + 1;
+
+                        //Xóa ngoặc đơn
+                        if (splitStr1 != removeParentheses(splitStr1))
+                        {
+                            splitStr1 = removeParentheses(splitStr1);
+                            lengthStrOr += 2;
+                        }
+                        if (splitStr2 != removeParentheses(splitStr2))
+                        {
+                            splitStr2 = removeParentheses(splitStr2);
+                            lengthStrOr += 2;
+                        }
+
+                        //Lấy phần tử được tách chuỗi trước đó 
+                        if (resultSplitOr.Count != 0)
+                        {
+                            resultSplitOr.Pop();
+                        }
+
+                        //Thêm các phần tử mới được tách
+                        resultSplitOr.Push(splitStr1);
+                        resultSplitOr.Push(splitStr2);
+
+                        tempa = splitStr2;
+
+                    }
+                }
+
+                foreach (var item in resultSplitOr)
+                {
+                    if (item.Length != 1)
+                    {
+                        temp = "(-(" + item + "))." + temp;
+                    }
+                    else
+                    {
+                        temp = "(-" + item + ")." + temp;
+                    }
+                }
+
+                if (temp != "")
+                {
+                    temp = temp.Substring(0, temp.Length - 1);
+
+                    if (!result.Any(item => item == temp))
+                    {
+                        result.Add(temp);
+                    }
+                }
+
+            }
+
             return result;
         }
 
@@ -724,22 +1016,24 @@ namespace LogicClause
         static void Main(string[] args)
         {
 
-            List<string> t = new List<string>();
-            t.Add("A+(-B)+(-D)");
-            t.Add("(E.F)>D");
-            t.Add("-A");
-            t.Add("E.F");
-
-            string result = "-B";
-
-            for (int i = 0; i < t.Count; i++)
-            {
-                Console.WriteLine(i.ToString() + ". " + t[i]);
-            }
-            Console.WriteLine("------------");
+            //List<string> t = new List<string>();
+            //t.Add("A+(-B)+(-D)");
+            //t.Add("(E.F)>D");
+            //t.Add("-A");
+            //t.Add("E.F");
+            //
+            //string result = "-B";
+            //
+            //for (int i = 0; i < t.Count; i++)
+            //{
+            //    Console.WriteLine(i.ToString() + ". " + t[i]);
+            //}
+            //Console.WriteLine("------------");
 
             //handleClause(t, result);
-            List<string> test = EQ("(a+b).(e+f)");
+
+
+            List<string> test = EQ("-(a+(b.c)+d+(e>f))");
             foreach (var item in test)
             {
                 Console.WriteLine(item);
