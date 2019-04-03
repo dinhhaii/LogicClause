@@ -97,18 +97,23 @@ namespace LogicClause
                 a = c1.Substring(0, index);
                 b = c1.Substring(index + 1, c1.Length - index - 1);
 
-                //Xóa dấu ngoặc đơn
-                a = removeParentheses(a);
-                b = removeParentheses(b);
+                //Kiểm tra nếu số lượng dấu '(' = số lượng dấu ')' thì xử lý
+                if (countCharacter(a, '(') == countCharacter(a, ')') && countCharacter(b, '(') == countCharacter(b, ')'))
+                {
 
-                //Trả về kết quả
-                if (c2 == a)
-                {
-                    result += b;
-                }
-                if (result != "")
-                {
-                    return result;
+                    //Xóa dấu ngoặc đơn
+                    a = removeParentheses(a);
+                    b = removeParentheses(b);
+
+                    //Trả về kết quả
+                    if (c2 == a)
+                    {
+                        result += b;
+                    }
+                    if (result != "")
+                    {
+                        return result;
+                    }
                 }
             }
             return result;
@@ -132,54 +137,58 @@ namespace LogicClause
                 a = c1.Substring(0, index);
                 b = c1.Substring(index + 1, c1.Length - index - 1);
 
-                //Xóa dấu ngoặc đơn
-                a = removeParentheses(a);
-                b = removeParentheses(b);
-
-                //Kiểm tra b và c2 có dấu trừ ở đầu
-                bool isNegative = false;
-
-                //Xóa dấu "-" của b
-                if (b[0] == '-')
+                //Kiểm tra nếu số lượng dấu '(' = số lượng dấu ')' thì xử lý
+                if (countCharacter(a, '(') == countCharacter(a, ')') && countCharacter(b, '(') == countCharacter(b, ')'))
                 {
-                    b = b.Replace("-", string.Empty);
+                    //Xóa dấu ngoặc đơn
+                    a = removeParentheses(a);
                     b = removeParentheses(b);
-                    isNegative = true;
-                }
-                else if (c2[0] == '-') //hoặc xóa dấu "-" của c2
-                {
-                    c2 = c2.Replace("-", string.Empty);
-                    c2 = removeParentheses(c2);
-                    isNegative = true;
-                }
 
-                //Trả về kết quả
-                if (b == c2 && isNegative)
-                {
-                    if (a.Length == 1) //a
+                    //Kiểm tra b và c2 có dấu trừ ở đầu
+                    bool isNegative = false;
+
+                    //Xóa dấu "-" của b
+                    if (b[0] == '-')
                     {
-                        result = "-" + a; //-a
+                        b = b.Replace("-", string.Empty);
+                        b = removeParentheses(b);
+                        isNegative = true;
                     }
-                    else
+                    else if (c2[0] == '-') //hoặc xóa dấu "-" của c2
                     {
-                        if (a[0] == '-') // -(a.b)
-                        {
-                            result = a.Remove(0, 1); //(a.b)
-                            result = removeParentheses(result); //a.b
-                        }
-                        else //a.b
-                        {
-                            result = "-(" + a + ")"; //-(a.b)
-                        }
+                        c2 = c2.Replace("-", string.Empty);
+                        c2 = removeParentheses(c2);
+                        isNegative = true;
+                    }
 
+                    //Trả về kết quả
+                    if (b == c2 && isNegative)
+                    {
+                        if (a.Length == 1) //a
+                        {
+                            result = "-" + a; //-a
+                        }
+                        else
+                        {
+                            if (a[0] == '-') // -(a.b)
+                            {
+                                result = a.Remove(0, 1); //(a.b)
+                                result = removeParentheses(result); //a.b
+                            }
+                            else //a.b
+                            {
+                                result = "-(" + a + ")"; //-(a.b)
+                            }
+
+                        }
+                    }
+                    if (result != "")
+                    {
+                        return result;
                     }
                 }
-                if (result != "")
-                {
-                    return result;
-                }
-
-            }          
+            }   
+                
 
             return result;
         }
@@ -210,6 +219,7 @@ namespace LogicClause
                     b1 = c1.Substring(index1 + 1, c1.Length - index1 - 1);
                     b2 = c2.Substring(0, index2);
                     c = c2.Substring(index2 + 1, c2.Length - index2 - 1);
+
 
                     if (b1 == b2)
                     {
@@ -297,6 +307,7 @@ namespace LogicClause
                         int index1 = indexList1[i];
                         int index2 = indexList2[j];
                         int index3 = indexList3[k];
+
                         //Tách a,b,c,d và xóa dấu ngoặc đơn từ c1 và c2
                         a = removeParentheses(c1.Substring(0, index1));
                         b = removeParentheses(c1.Substring(index1 + 1, c1.Length - index1 - 1));
@@ -355,52 +366,56 @@ namespace LogicClause
                 a = c1.Substring(0, index);
                 b = c1.Substring(index + 1, c1.Length - index - 1);
 
-                string tempa = a = removeParentheses(a);
-                string tempb = b = removeParentheses(b);
-
-                /*4 trường hợp: (-b); (-(a.b)); (a.b); b; => -b; -(a.b); a.b; b;*/
-
-                if (c2[0] == '-')
+                //Kiểm tra nếu số lượng dấu '(' = số lượng dấu ')' thì xử lý
+                if (countCharacter(a, '(') == countCharacter(a, ')') && countCharacter(b, '(') == countCharacter(b, ')'))
                 {
-                    c2 = c2.Replace("-", string.Empty);
-                    c2 = removeParentheses(c2);
-                    //So sánh kết quả
-                    if (b == c2)
+                    string tempa = a = removeParentheses(a);
+                    string tempb = b = removeParentheses(b);
+
+                    /*4 trường hợp: (-b); (-(a.b)); (a.b); b; => -b; -(a.b); a.b; b;*/
+
+                    if (c2[0] == '-')
                     {
-                        result += tempa;
-                    }
-                    else if (a == c2)
-                    {
-                        result += tempb;
-                    }
-                }
-                else if(b[0] == '-' || a[0] == '-')
-                {
-                    if (b[0] == '-')
-                    {
-                        b = b.Replace("-", string.Empty);
-                        b = removeParentheses(b);
+                        c2 = c2.Replace("-", string.Empty);
+                        c2 = removeParentheses(c2);
                         //So sánh kết quả
                         if (b == c2)
                         {
                             result += tempa;
                         }
-                    }
-                    if (a[0] == '-')
-                    {
-                        a = a.Replace("-", string.Empty);
-                        a = removeParentheses(a);
-                        //So sánh kết quả
-                        if (a == c2)
+                        else if (a == c2)
                         {
                             result += tempb;
                         }
                     }
-                }
+                    else if (b[0] == '-' || a[0] == '-')
+                    {
+                        if (b[0] == '-')
+                        {
+                            b = b.Replace("-", string.Empty);
+                            b = removeParentheses(b);
+                            //So sánh kết quả
+                            if (b == c2)
+                            {
+                                result += tempa;
+                            }
+                        }
+                        if (a[0] == '-')
+                        {
+                            a = a.Replace("-", string.Empty);
+                            a = removeParentheses(a);
+                            //So sánh kết quả
+                            if (a == c2)
+                            {
+                                result += tempb;
+                            }
+                        }
+                    }
 
-                if(result != "")
-                {
-                    return result;
+                    if (result != "")
+                    {
+                        return result;
+                    }
                 }
             }
             return result;
@@ -473,6 +488,29 @@ namespace LogicClause
             return result;
         }
 
+        //Equivalence
+        static List<string> EQ(string clause)
+        {
+            List<string> result = new List<string>();
+            string a = "", b = "";
+            List<int> indexList = findCharacter(clause, '.');
+            for (int i = 0; i < indexList.Count; i++)
+            {
+                int index = indexList[i];
+                //Tách a và b từ c1
+                a = clause.Substring(0, index);
+                b = clause.Substring(index + 1, clause.Length - index - 1);
+
+                //Kiểm tra nếu số lượng dấu '(' = số lượng dấu ')' thì xử lý
+                if (countCharacter(a, '(') == countCharacter(a, ')') && countCharacter(b, '(') == countCharacter(b, ')'))
+                {
+                    string temp = b + "." + a;
+                    result.Add(temp);
+                }
+            }
+            return result;
+        }
+
         //Kiểm tra các mệnh đề có nhập đúng 
         static bool checkInput(List<string> clause)
         {
@@ -501,6 +539,8 @@ namespace LogicClause
             return true;
         }
 
+
+        //Suy diễn tự nhiên cho các mệnh đề
         static void handleClause(List<string> clause,string result)
         {
             if (!checkInput(clause))
