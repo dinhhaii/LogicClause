@@ -16,8 +16,8 @@ namespace LogicClause
 
             if (firstIndex != -1 && lastIndex != -1)
             {
-                int[] openParentheses = new int[10]; //Danh sách vị trí dấu mở ngoặc '('
-                int[] closeParentheses = new int[10]; //Danh sách vị trí dấu đóng ngoặc ')'
+                int[] openParentheses = new int[100]; //Danh sách vị trí dấu mở ngoặc '('
+                int[] closeParentheses = new int[100]; //Danh sách vị trí dấu đóng ngoặc ')'
                 int count = 0; //Số lượng dấu ngoặc '(' hoặc ')'
                 int flag = 0; //Đánh dấu vị trí dấu ngoặc '(' chưa được sử dụng
 
@@ -34,7 +34,7 @@ namespace LogicClause
                         while (closeParentheses[flag] != 0) //Chọn vị trí dấu ngoặc ')' ứng với dấu '(' tiếp theo
                         {
                             flag--;
-                            if(flag == -1)
+                            if(flag < 0)
                             {
                                 break;
                             }
@@ -47,7 +47,7 @@ namespace LogicClause
                     }
                 }
 
-                if (closeParentheses[0] == lastIndex && firstIndex == 0)
+                if (closeParentheses[0] == lastIndex && firstIndex == 0 && lastIndex == a.Length-1)
                 {
                     return true;
                 }
@@ -241,31 +241,37 @@ namespace LogicClause
                     b2 = c2.Substring(0, index2);
                     c = c2.Substring(index2 + 1, c2.Length - index2 - 1);
 
-
-                    if (b1 == b2)
+                    if (countCharacter(a, '(') == countCharacter(a, ')') && countCharacter(b1, '(') == countCharacter(b1, ')') && countCharacter(b2, '(') == countCharacter(b2, ')') && countCharacter(c, '(') == countCharacter(c, ')'))
                     {
-                        if (a.Length == 1)
+                        b1 = removeParentheses(b1);
+                        b2 = removeParentheses(b2);
+                        a = removeParentheses(a);
+                        c = removeParentheses(c);
+                        if (b1 == b2)
                         {
-                            result += a;
-                        }
-                        else
-                        {
-                            result += "(" + a + ")";
+                            if (a.Length == 1)
+                            {
+                                result += a;
+                            }
+                            else
+                            {
+                                result += "(" + a + ")";
+                            }
+
+                            if (c.Length == 1)
+                            {
+                                result += ">" + c;
+                            }
+                            else
+                            {
+                                result += ">(" + c + ")";
+                            }
                         }
 
-                        if (c.Length == 1)
+                        if (result != "")
                         {
-                            result += ">" + c;
+                            return result;
                         }
-                        else
-                        {
-                            result += ">(" + c + ")";
-                        }
-                    }
-
-                    if(result != "")
-                    {
-                        return result;
                     }
                 }
             }
@@ -535,7 +541,7 @@ namespace LogicClause
                     if(tempa[0] == '-')
                     {
                         tempa = tempa.Substring(1, tempa.Length - 1);
-                        tempa = removeParentheses(tempa);
+                        //tempa = removeParentheses(tempa);
                     }
                     else if(tempa.Length != 1)
                     {
@@ -557,7 +563,7 @@ namespace LogicClause
                     if (tempb[0] == '-')
                     {
                         tempb = tempb.Substring(1, tempb.Length - 1);
-                        tempb = removeParentheses(tempb);
+                        //tempb = removeParentheses(tempb);
                     }
                     else if (tempb.Length != 1)
                     {
@@ -574,12 +580,6 @@ namespace LogicClause
                         result.Add(temp);
                     }
 
-                    //4.3.2) (-a)>(-b) = b>a =================================================================================================
-                    temp = string.Format("{0}>{1}", tempb, tempa);
-                    if (!result.Any(item => item == temp) && temp != "")
-                    {
-                        result.Add(temp);
-                    }
                 }
             }
 
@@ -915,12 +915,11 @@ namespace LogicClause
                         if (splitStr1 != removeParentheses(splitStr1))
                         {
                             splitStr1 = removeParentheses(splitStr1);
-                            lengthStrAnd += 2;
                         }
                         if (splitStr2 != removeParentheses(splitStr2))
                         {
                             splitStr2 = removeParentheses(splitStr2);
-                            lengthStrAnd += 2;
+                            lengthStrAnd += 1;
                         }
 
                         //Lấy phần tử được tách chuỗi trước đó 
@@ -944,7 +943,14 @@ namespace LogicClause
                         string tmp = "-(" + item + ")";
                         tmp = EQ5_1(tmp);
                         tmp = removeParentheses(tmp);
-                        temp = "("+ tmp +")+" + temp;
+                        if (tmp.Length != 1)
+                        {
+                            temp = "(" + tmp + ")+" + temp;
+                        }
+                        else
+                        {
+                            temp = tmp + "+" + temp;
+                        }
                     }
                     else
                     {
@@ -1001,6 +1007,7 @@ namespace LogicClause
                     }
                 }
 
+                temp = "";
                 foreach (var item in resultSplitOr)
                 {
                     if (item.Length != 1)
@@ -1008,7 +1015,14 @@ namespace LogicClause
                         string tmp = "-(" + item + ")";
                         tmp = EQ5_1(tmp);
                         tmp = removeParentheses(tmp);
-                        temp = "(" + tmp + ")." + temp;
+                        if (tmp.Length != 1)
+                        {
+                            temp = "(" + tmp + ")." + temp;
+                        }
+                        else
+                        {
+                            temp = tmp + "." + temp;
+                        }
                     }
                     else
                     {
@@ -1035,16 +1049,13 @@ namespace LogicClause
         static string EQ5_1(string clause)
         {
             string result = "";
-            
-            if (clause.IndexOf("-(-") == 0 || clause.IndexOf("--") == 0)
+
+            if (clause.IndexOf("-(") == 0)
             {
+                result = clause;
                 if (clause.IndexOf("-(-") == 0)
                 {
                     result = clause.Substring(3, clause.Length - 4);
-                }
-                else if (clause.IndexOf("--") == 0)
-                {
-                    result = clause.Substring(2, clause.Length - 3);
                 }
             }
             return result;
@@ -1079,15 +1090,31 @@ namespace LogicClause
         }
 
         //Nối danh sách
-        static void addList(ref List<string> list, List<string> addedList)
+        static void addList(List<string> list, List<string> addedList)
         {
             foreach (var item in addedList)
             {
-                if (list.Any(temp => temp == item))
+                if (!list.Any(temp => temp == item))
                 {
                     list.Add(item);
                 }
             }
+        }
+
+        //Tìm chuỗi con
+        static List<int> findIndexSubstring(string clause, string substr)
+        {
+            List<int> result = new List<int>();
+            string temp = clause;
+            int indexOfSubstr = 0;
+            while(indexOfSubstr != -1)
+            {
+                indexOfSubstr = temp.IndexOf(substr);
+                result.Add(indexOfSubstr);
+                temp = temp.Substring(indexOfSubstr, temp.Length - indexOfSubstr - 1);
+
+            }
+            return result;
         }
 
         //Suy diễn tự nhiên cho các mệnh đề
@@ -1101,15 +1128,16 @@ namespace LogicClause
 
             for(int i = 0; i < clause.Count; i++)
             {
+
                 //Xử lý hàm SIM
                 string SIMResult1 = "", SIMResult2 = "";
                 SIMResult1 = SIM(clause[i], 1);
                 SIMResult2 = SIM(clause[i], 2);
 
-                //Xử lý hàm EQ ==========================================================
+                //Xử lý hàm EQ
                 List<string> EQResult = new List<string>();
                 EQResult = EQ(clause[i]);
-                addList(ref clause, EQResult);
+                addList(clause, EQResult);
 
                 //Nếu có kết quả
                 if(SIMResult1 != "")
@@ -1137,6 +1165,9 @@ namespace LogicClause
 
                 for (int j = 0; j < clause.Count; j++)
                 {
+                    //Xử lý lệnh ADD
+
+
                     string tempResult = "";
                     int select = 0;
                     //Xử lý các lệnh còn lại
@@ -1191,7 +1222,7 @@ namespace LogicClause
                             if (!clause.Any(item => item == DILResult))
                             {
                                 clause.Add(DILResult);
-                                Console.Write("{0}. {1} | DIL {2},{3},{4}",clause.Count - 1,DILResult,i,j,k);
+                                Console.WriteLine("{0}. {1} | DIL {2},{3},{4}",clause.Count - 1,DILResult,i,j,k);
                                 i = 0; j = 0;k = 0;
                             }
                             
@@ -1204,23 +1235,23 @@ namespace LogicClause
                 }
             }
 
+            Console.WriteLine("------");
             for(int i = 0; i < clause.Count; i++)
             {
-                if(clause[i] == result)
-                {
-                    Console.WriteLine("Right");
-                }
+                Console.WriteLine("{0}. {1}",i,clause[i]);
             }
+            Console.WriteLine("------");
         }
 
         static void Main(string[] args)
         {
 
             List<string> t = new List<string>();
-            t.Add("A+(-B)+(-D)");
-            t.Add("(E.F)>D");
-            t.Add("-A");
-            t.Add("E.F");
+            t.Add("N>O");
+            t.Add("(N.O)>P");
+            t.Add("P>(-O)");
+            t.Add("N");
+
 
             string result = "-B";
 
@@ -1239,6 +1270,12 @@ namespace LogicClause
             //{
             //    Console.WriteLine(item);
             //}
+
+            List<int> test = findIndexSubstring("Em di hoc va di hoc hehe", "hoc");
+            foreach(var item in test)
+            {
+                Console.WriteLine(item);
+            }
             Console.ReadKey();
         }
     }
