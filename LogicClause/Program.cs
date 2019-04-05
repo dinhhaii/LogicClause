@@ -34,8 +34,16 @@ namespace LogicClause
                         while (closeParentheses[flag] != 0) //Chọn vị trí dấu ngoặc ')' ứng với dấu '(' tiếp theo
                         {
                             flag--;
+                            if(flag == -1)
+                            {
+                                break;
+                            }
                         }
-                        closeParentheses[flag] = i;
+
+                        if (flag != -1)
+                        {
+                            closeParentheses[flag] = i;
+                        }
                     }
                 }
 
@@ -504,10 +512,95 @@ namespace LogicClause
         //Equivalence
         static List<string> EQ(string clause)
         {
+            clause = removeParentheses(clause);
             List<string> result = new List<string>();
             string a = "", b = "";
             List<int> indexAndOfClauseList = findCharacter(clause, '.');
             List<int> indexOrOfClauseList = findCharacter(clause, '+');
+            List<int> indexEqualClauseList = findCharacter(clause, '=');
+            List<int> indexDeducedClauseList = findCharacter(clause, '>');
+
+            for (int i = 0; i < indexDeducedClauseList.Count; i++)
+            {
+                int index = indexDeducedClauseList[i];
+                //Tách a và b từ clause
+                a = clause.Substring(0, index);
+                b = clause.Substring(index + 1, clause.Length - index - 1);
+
+                //Kiểm tra nếu số lượng dấu '(' = số lượng dấu ')' thì xử lý
+                if (countCharacter(a, '(') == countCharacter(a, ')') && countCharacter(b, '(') == countCharacter(b, ')'))
+                {
+                    //4.2) a>b = (-a)+b =================================================================================================
+                    string tempa = removeParentheses(a);
+                    if(tempa[0] == '-')
+                    {
+                        tempa = tempa.Substring(1, tempa.Length - 1);
+                        tempa = removeParentheses(tempa);
+                    }
+                    else if(tempa.Length != 1)
+                    {
+                        tempa = string.Format("(-({0}))", tempa);
+                    }
+                    else
+                    {
+                        tempa = string.Format("(-{0})", tempa);
+                    }
+
+                    string temp = string.Format("{0}+{1}", tempa, b);
+                    if (!result.Any(item => item == temp) && temp != "")
+                    {
+                        result.Add(temp);
+                    }
+
+                    //4.3.1) a>b = (-b)>(-a) =================================================================================================
+                    string tempb = removeParentheses(b);
+                    if (tempb[0] == '-')
+                    {
+                        tempb = tempb.Substring(1, tempb.Length - 1);
+                        tempb = removeParentheses(tempb);
+                    }
+                    else if (tempb.Length != 1)
+                    {
+                        tempb = string.Format("(-({0}))", tempb);
+                    }
+                    else
+                    {
+                        tempb = string.Format("(-{0})", tempb);
+                    }
+
+                    temp = string.Format("{0}>{1}", tempb, tempa);
+                    if (!result.Any(item => item == temp) && temp != "")
+                    {
+                        result.Add(temp);
+                    }
+
+                    //4.3.2) (-a)>(-b) = b>a =================================================================================================
+                    temp = string.Format("{0}>{1}", tempb, tempa);
+                    if (!result.Any(item => item == temp) && temp != "")
+                    {
+                        result.Add(temp);
+                    }
+                }
+            }
+
+             for ( int i = 0; i < indexEqualClauseList.Count; i++)
+             {
+                int index = indexEqualClauseList[i];
+                //Tách a và b từ clause
+                a = clause.Substring(0, index);
+                b = clause.Substring(index + 1, clause.Length - index - 1);
+
+                //Kiểm tra nếu số lượng dấu '(' = số lượng dấu ')' thì xử lý
+                if (countCharacter(a, '(') == countCharacter(a, ')') && countCharacter(b, '(') == countCharacter(b, ')'))
+                {
+                    //4.1) a=b = (a>b).(b.a) =================================================================================================
+                    string temp = string.Format("({0}>{1}).({2}>{3})", a, b, b, a);
+                    if(!result.Any(item => item == temp) && temp != "")
+                    {
+                        result.Add(temp);
+                    }
+                }
+            }
 
             for (int i = 0; i < indexAndOfClauseList.Count; i++)
             {
@@ -569,6 +662,44 @@ namespace LogicClause
                                 }
                             }
                         }
+                    }
+
+                    // 5.2.1) (-a).(-b)= -(a+b) =================================================================================================
+                    string tempRmvParenthesesA = removeParentheses(a);
+                    string tempRmvParenthesesB = removeParentheses(b);
+                    //Xử lý với mệnh đề a
+                    if (tempRmvParenthesesA[0] == '-')
+                    {
+                        tempRmvParenthesesA = tempRmvParenthesesA.Substring(1, tempRmvParenthesesA.Length - 1);
+                        //tempRmvParenthesesA = removeParentheses(tempRmvParenthesesA);
+                    }
+                    else if (tempRmvParenthesesA.Length != 1)
+                    {
+                        tempRmvParenthesesA = string.Format("(-({0}))",tempRmvParenthesesA);
+                    }
+                    else
+                    {
+                        tempRmvParenthesesA = string.Format("(-{0})", tempRmvParenthesesA);
+                    }
+
+                    //Xử lý với mệnh đề b
+                    if (tempRmvParenthesesB[0] == '-')
+                    {
+                        tempRmvParenthesesB = tempRmvParenthesesB.Substring(1, tempRmvParenthesesB.Length - 1);
+                        //tempRmvParenthesesB = removeParentheses(tempRmvParenthesesB);
+                    }
+                    else if (tempRmvParenthesesB.Length != 1)
+                    {
+                        tempRmvParenthesesB = string.Format("(-({0}))", tempRmvParenthesesB);
+                    }
+                    else
+                    {
+                        tempRmvParenthesesB = string.Format("(-{0})", tempRmvParenthesesB);
+                    }
+                    temp = string.Format("-({0}+{1})", tempRmvParenthesesA, tempRmvParenthesesB);
+                    if(!result.Any(item => item == temp) && temp != "")
+                    {
+                        result.Add(temp);
                     }
 
                     //7.1) a.1=a =================================================================================================
@@ -668,6 +799,53 @@ namespace LogicClause
                         }
                     }
 
+                    
+                    string tempRmvParenthesesA = removeParentheses(a);
+                    string tempRmvParenthesesB = removeParentheses(b);
+                    //Xử lý với mệnh đề a
+                    if (tempRmvParenthesesA[0] == '-')
+                    {
+                        tempRmvParenthesesA = tempRmvParenthesesA.Substring(1, tempRmvParenthesesA.Length - 1);
+                        //tempRmvParenthesesA = removeParentheses(tempRmvParenthesesA);
+                    }
+                    else if (tempRmvParenthesesA.Length != 1)
+                    {
+                        tempRmvParenthesesA = string.Format("(-({0}))", tempRmvParenthesesA);
+                    }
+                    else
+                    {
+                        tempRmvParenthesesA = string.Format("(-{0})", tempRmvParenthesesA);
+                    }
+
+                    //Xử lý với mệnh đề b
+                    if (tempRmvParenthesesB[0] == '-')
+                    {
+                        tempRmvParenthesesB = tempRmvParenthesesB.Substring(1, tempRmvParenthesesB.Length - 1);
+                        //tempRmvParenthesesB = removeParentheses(tempRmvParenthesesB);
+                    }
+                    else if (tempRmvParenthesesB.Length != 1)
+                    {
+                        tempRmvParenthesesB = string.Format("(-({0}))", tempRmvParenthesesB);
+                    }
+                    else
+                    {
+                        tempRmvParenthesesB = string.Format("(-{0})", tempRmvParenthesesB);
+                    }
+
+                    //4.2) (-a)+b = a>b =================================================================================================
+                    temp = string.Format("{0}>{1}", tempRmvParenthesesA, b);
+                    if (!result.Any(item => item == temp) && temp != "")
+                    {
+                        result.Add(temp);
+                    }
+
+                    //5.2.2) (-a)+(-b)= -(a.b) =================================================================================================
+                    temp = string.Format("-({0}.{1})", tempRmvParenthesesA, tempRmvParenthesesB);
+                    if (!result.Any(item => item == temp) && temp != "")
+                    {
+                        result.Add(temp);
+                    }
+
                     //7.2) a+1=1 =================================================================================================
                     if (b == "1")
                     {
@@ -703,25 +881,7 @@ namespace LogicClause
                 }
             }
 
-            //5.1) -(-a)=a =================================================================================================
-            if (clause.IndexOf("-(-") == 0 || clause.IndexOf("--") == 0)
-            {
-                string temp = "";
-                if (clause.IndexOf("-(-") == 0)
-                {
-                    temp = clause.Substring(3, clause.Length - 3);
-                }
-                else if (clause.IndexOf("--") == 0)
-                {
-                    temp = clause.Substring(2, clause.Length - 2);
-                }
-                if(!result.Any(item => item == temp) && temp != "")
-                {
-                    result.Add(temp);
-                }
-            }
-
-            
+  
             if (clause.IndexOf('-') == 0)
             {  
                 string temp = "";
@@ -739,7 +899,7 @@ namespace LogicClause
                 Stack<string> resultSplitAnd = new Stack<string>();
                 Stack<string> resultSplitOr = new Stack<string>();
 
-                //5.2) -(a.b) = (-a)+(-b) =================================================================================================
+                //5.2.2) -(a.b) = (-a)+(-b) =================================================================================================
                 //Duyệt các kí tự '.' được tìm thấy
                 for (int i = 0; i < indexAndList.Count; i++)
                 {
@@ -781,7 +941,10 @@ namespace LogicClause
                 {
                     if(item.Length!= 1)
                     {
-                        temp = "(-(" + item + "))+" + temp;
+                        string tmp = "-(" + item + ")";
+                        tmp = EQ5_1(tmp);
+                        tmp = removeParentheses(tmp);
+                        temp = "("+ tmp +")+" + temp;
                     }
                     else
                     {
@@ -799,7 +962,7 @@ namespace LogicClause
                     }
                 }
 
-                //5.3) -(a+b) = (-a).(-b) =================================================================================================
+                //5.3.2) -(a+b) = (-a).(-b) =================================================================================================
                 //Duyệt các kí tự '+' được tìm thấy
                 for (int i = 0; i < indexOrList.Count; i++)
                 {
@@ -842,7 +1005,10 @@ namespace LogicClause
                 {
                     if (item.Length != 1)
                     {
-                        temp = "(-(" + item + "))." + temp;
+                        string tmp = "-(" + item + ")";
+                        tmp = EQ5_1(tmp);
+                        tmp = removeParentheses(tmp);
+                        temp = "(" + tmp + ")." + temp;
                     }
                     else
                     {
@@ -862,6 +1028,25 @@ namespace LogicClause
 
             }
 
+            return result;
+        }
+
+        //5.1) -(-a)=a =================================================================================================
+        static string EQ5_1(string clause)
+        {
+            string result = "";
+            
+            if (clause.IndexOf("-(-") == 0 || clause.IndexOf("--") == 0)
+            {
+                if (clause.IndexOf("-(-") == 0)
+                {
+                    result = clause.Substring(3, clause.Length - 4);
+                }
+                else if (clause.IndexOf("--") == 0)
+                {
+                    result = clause.Substring(2, clause.Length - 3);
+                }
+            }
             return result;
         }
 
@@ -893,6 +1078,17 @@ namespace LogicClause
             return true;
         }
 
+        //Nối danh sách
+        static void addList(ref List<string> list, List<string> addedList)
+        {
+            foreach (var item in addedList)
+            {
+                if (list.Any(temp => temp == item))
+                {
+                    list.Add(item);
+                }
+            }
+        }
 
         //Suy diễn tự nhiên cho các mệnh đề
         static void handleClause(List<string> clause,string result)
@@ -911,6 +1107,9 @@ namespace LogicClause
                 SIMResult2 = SIM(clause[i], 2);
 
                 //Xử lý hàm EQ ==========================================================
+                List<string> EQResult = new List<string>();
+                EQResult = EQ(clause[i]);
+                addList(ref clause, EQResult);
 
                 //Nếu có kết quả
                 if(SIMResult1 != "")
@@ -988,6 +1187,7 @@ namespace LogicClause
                         DILResult = DIL(clause[i], clause[j], clause[k]);
                         if (DILResult != "")
                         {
+                            //
                             if (!clause.Any(item => item == DILResult))
                             {
                                 clause.Add(DILResult);
@@ -1016,28 +1216,29 @@ namespace LogicClause
         static void Main(string[] args)
         {
 
-            //List<string> t = new List<string>();
-            //t.Add("A+(-B)+(-D)");
-            //t.Add("(E.F)>D");
-            //t.Add("-A");
-            //t.Add("E.F");
-            //
-            //string result = "-B";
-            //
-            //for (int i = 0; i < t.Count; i++)
-            //{
-            //    Console.WriteLine(i.ToString() + ". " + t[i]);
-            //}
-            //Console.WriteLine("------------");
+            List<string> t = new List<string>();
+            t.Add("A+(-B)+(-D)");
+            t.Add("(E.F)>D");
+            t.Add("-A");
+            t.Add("E.F");
 
-            //handleClause(t, result);
+            string result = "-B";
 
-
-            List<string> test = EQ("-(a+(b.c)+d+(e>f))");
-            foreach (var item in test)
+            for (int i = 0; i < t.Count; i++)
             {
-                Console.WriteLine(item);
+                Console.WriteLine(i.ToString() + ". " + t[i]);
             }
+            Console.WriteLine("------------");
+
+            handleClause(t, result);
+
+            //string t = "(-a)+(-b)";
+            //Console.WriteLine(t);
+            //List<string> test = EQ(t);
+            //foreach (var item in test)
+            //{
+            //    Console.WriteLine(item);
+            //}
             Console.ReadKey();
         }
     }
