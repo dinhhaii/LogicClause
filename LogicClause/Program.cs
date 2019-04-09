@@ -36,7 +36,7 @@ namespace LogicClause
                             flag--;
                             if(flag < 0)
                             {
-                                break;
+                                return false;
                             }
                         }
 
@@ -969,6 +969,13 @@ namespace LogicClause
                 }
 
                 //5.3.2) -(a+b) = (-a).(-b) =================================================================================================
+
+
+                temp = "";
+                //Loại bỏ dấu trừ và dấu ngoặc
+                tempa = clause.Substring(1, clause.Length - 1);
+                tempa = removeParentheses(tempa);
+
                 //Duyệt các kí tự '+' được tìm thấy
                 for (int i = 0; i < indexOrList.Count; i++)
                 {
@@ -984,12 +991,11 @@ namespace LogicClause
                         if (splitStr1 != removeParentheses(splitStr1))
                         {
                             splitStr1 = removeParentheses(splitStr1);
-                            lengthStrOr += 2;
                         }
                         if (splitStr2 != removeParentheses(splitStr2))
                         {
                             splitStr2 = removeParentheses(splitStr2);
-                            lengthStrOr += 2;
+                            lengthStrOr += 1;
                         }
 
                         //Lấy phần tử được tách chuỗi trước đó 
@@ -1148,6 +1154,7 @@ namespace LogicClause
                         Console.WriteLine("{0}. {1} | SIM {2}",clause.Count - 1,SIMResult1, i);
                         if (SIMResult1 == result)
                         {
+                            Console.WriteLine("TRUE");
                             return;
                         }
                     }
@@ -1157,6 +1164,7 @@ namespace LogicClause
                         Console.WriteLine("{0}. {1} | SIM {2}", clause.Count - 1, SIMResult2,i);
                         if (SIMResult2 == result)
                         {
+                            Console.WriteLine("TRUE");
                             return;
                         }
                     }
@@ -1204,8 +1212,9 @@ namespace LogicClause
                                 case 5: Console.WriteLine(" | HS {0},{1}", i, j); break;
                                 case 6: break;
                             }
-                            if(tempResult == result)
+                            if (tempResult == result)
                             {
+                                Console.WriteLine("TRUE");
                                 return;
                             }
                             i = 0; j = 0;
@@ -1223,14 +1232,16 @@ namespace LogicClause
                             {
                                 clause.Add(DILResult);
                                 Console.WriteLine("{0}. {1} | DIL {2},{3},{4}",clause.Count - 1,DILResult,i,j,k);
+                                if(DILResult == result)
+                                {
+                                    Console.WriteLine("TRUE");
+                                    return;
+                                }
                                 i = 0; j = 0;k = 0;
                             }
                             
                         }
-                        if (DILResult == result)
-                        {
-                            return;
-                        }
+
                     }
                 }
             }
@@ -1247,10 +1258,10 @@ namespace LogicClause
         {
 
             List<string> t = new List<string>();
-            t.Add("N>O");
-            t.Add("(N.O)>P");
-            t.Add("P>(-O)");
-            t.Add("N");
+            t.Add("A+(-B)+(-D)");
+            t.Add("(E.F)>D");
+            t.Add("-A");
+            t.Add("F.E");
 
 
             string result = "-B";
@@ -1263,7 +1274,7 @@ namespace LogicClause
 
             handleClause(t, result);
 
-            //string t = "(-a)+(-b)";
+            //string t = "-((-P).(-((-N)+(-O))))";
             //Console.WriteLine(t);
             //List<string> test = EQ(t);
             //foreach (var item in test)
@@ -1271,11 +1282,11 @@ namespace LogicClause
             //    Console.WriteLine(item);
             //}
 
-            List<int> test = findIndexSubstring("Em di hoc va di hoc hehe", "hoc");
-            foreach(var item in test)
-            {
-                Console.WriteLine(item);
-            }
+            //List<int> test = findIndexSubstring("Em di hoc va di hoc hehe", "hoc");
+            //foreach(var item in test)
+            //{
+            //    Console.WriteLine(item);
+            //}
             Console.ReadKey();
         }
     }
