@@ -284,7 +284,7 @@ namespace LogicClause
         // b
         //------
         // a.b
-        static string CON(string c1, string c2)
+        static string CON(List<string> clauses, string c1, string c2)
         {
             string result = "";
 
@@ -308,7 +308,23 @@ namespace LogicClause
                     result += ".(" + c2 + ")";
                 }
             }
-            return result;
+            List<string> EQResult = EQ(result);
+            if (EQResult.Any(temp => temp == "0"))
+            {
+                return "0";
+            }
+            else
+            {
+                foreach (var item in clauses)
+                {
+                    if (item.Contains(result))
+                    {
+                        return result;
+                    }
+                }
+            }
+
+            return "";
         }
 
         //Dilemma
@@ -1124,7 +1140,7 @@ namespace LogicClause
         }
 
         //Suy diễn tự nhiên cho các mệnh đề
-        static void handleClause(List<string> clause,string result)
+        static void handleClause(List<string> clause,string result, ref List<MyClause> clauses)
         {
             if (!checkInput(clause))
             {
@@ -1132,8 +1148,29 @@ namespace LogicClause
                 return;
             }
 
+            clauses = new List<MyClause>();
+
+            for (int i = 0; i < clause.Count; i++)
+            {
+                MyClause temp = new MyClause();
+                temp.type = "CP";
+                temp.id = i;
+                temp.content = clause[i];
+                clauses.Add(temp);
+            }
+
             for(int i = 0; i < clause.Count; i++)
             {
+                if (clause[i] == "0")
+                {
+                    Console.WriteLine("FAULT");
+                    return;
+                }
+                else if(clause[i] == "1")
+                {
+                    Console.WriteLine("TRUE");
+                    return;
+                }
 
                 //Xử lý hàm SIM
                 string SIMResult1 = "", SIMResult2 = "";
@@ -1143,14 +1180,36 @@ namespace LogicClause
                 //Xử lý hàm EQ
                 List<string> EQResult = new List<string>();
                 EQResult = EQ(clause[i]);
+                int m = clause.Count;
                 addList(clause, EQResult);
 
+                for (; m < clause.Count; m++)
+                {
+                    MyClause c = new MyClause();
+                    c.content = clause[m];
+                    c.type = "EQ";
+                    c.num.Add(i);
+                    c.id = m;
+                    clauses.Add(c);
+                    Console.WriteLine("{0}. {1} | EQ {2}", m, clause[m], i);
+                }
+                
+
+
                 //Nếu có kết quả
-                if(SIMResult1 != "")
+                if (SIMResult1 != "")
                 {
                     if (!clause.Any(item => item == SIMResult1)) //Nếu kết quả không tồn tại trong tập các mệnh đề
                     {
                         clause.Add(SIMResult1);
+
+                        MyClause c = new MyClause();
+                        c.type = "SIM";
+                        c.num.Add(i);
+                        c.content = SIMResult1;
+                        c.id = clause.Count - 1;
+                        clauses.Add(c);
+
                         Console.WriteLine("{0}. {1} | SIM {2}",clause.Count - 1,SIMResult1, i);
                         if (SIMResult1 == result)
                         {
@@ -1161,6 +1220,14 @@ namespace LogicClause
                     if (!clause.Any(item => item == SIMResult2)) //Nếu kết quả không tồn tại trong tập các mệnh đề
                     {
                         clause.Add(SIMResult2);
+
+                        MyClause c = new MyClause();
+                        c.type = "SIM";
+                        c.num.Add(i);
+                        c.content = SIMResult2;
+                        c.id = clause.Count - 1;
+                        clauses.Add(c);
+
                         Console.WriteLine("{0}. {1} | SIM {2}", clause.Count - 1, SIMResult2,i);
                         if (SIMResult2 == result)
                         {
@@ -1174,6 +1241,49 @@ namespace LogicClause
                 for (int j = 0; j < clause.Count; j++)
                 {
                     //Xử lý lệnh ADD
+                    string temp = clause[j];
+
+                    if (temp.Length != 1)
+                    {
+                        temp = "(" + temp + ")";
+                    }
+                    string temp1 = "(" + temp + "+";
+                    string temp2 = "+" + temp + ")";
+
+                    if (clause[i].IndexOf(temp1) != -1)
+                    {
+                        int index = clause[i].IndexOf(temp1);
+                        temp = clause[i].Substring(index, temp1.Length + 2);
+                    }
+                    else if (clause[i].IndexOf(temp2) != -1)
+                    {
+                        int index = clause[i].IndexOf(temp2);
+                        temp = clause[i].Substring(index - 2, temp2.Length + 2);
+                    }
+
+                    if (countCharacter(temp, '(') == countCharacter(temp, ')'))
+                    {
+                        temp = removeParentheses(temp);
+                        if (!clause.Any(item => item == temp))
+                        {
+                            clause.Add(temp);
+
+                            MyClause c = new MyClause();
+                            c.type = "ADD";
+                            c.num.Add(j);
+                            c.content = temp;
+                            c.id = clause.Count - 1;
+                            clauses.Add(c);
+                            
+                            Console.WriteLine("{0}. {1} | ADD {2}", clause.Count - 1, temp, j);
+                            
+                            if (temp == result)
+                            {
+                                Console.WriteLine("TRUE");
+                                return;
+                            }
+                        }
+                    }
 
 
                     string tempResult = "";
@@ -1187,37 +1297,53 @@ namespace LogicClause
                             case 1: tempResult = MP(clause[i], clause[j]); break;
                             case 2: tempResult = MT(clause[i], clause[j]); break;
                             case 3: tempResult = DS(clause[i], clause[j]); break;
-                            case 4: //tempResult = CON(clause[i], clause[j]); 
-                                break;
+                            case 4: tempResult = CON(clause, clause[i], clause[j]); break;
                             case 5: tempResult = HS(clause[i], clause[j]); break;
                             case 6: break;
                             default: tempResult = "-1"; break;
                         }
-                        
+
                     }
                     if (tempResult != "" && tempResult != "-1")
                     {
                         //Kiểm tra kết quả có tồn tại trong các mệnh đề ban đầu
                         if (!clause.Any(item => item == tempResult))
-                        {
+                        {                      
                             clause.Add(tempResult);
-                            Console.Write("{0}. {1}", clause.Count - 1, tempResult);
+
+                            MyClause c = new MyClause();
+                            c.content = tempResult;
+                            c.id = clause.Count - 1;
+                            Console.Write("{0}. {1}", clause.Count -1, tempResult);
                             switch (select)
                             {
-                                case 1: Console.WriteLine(" | MP {0},{1}", i, j); break;
-                                case 2: Console.WriteLine(" | MT {0},{1}", i, j); break;
-                                case 3: Console.WriteLine(" | DS {0},{1}", i, j); break;
-                                case 4: //Console.WriteLine(" | CON {0},{1}", i, j);
+                                case 1: c.type = "MP"; c.num.Add(i); c.num.Add(j); Console.WriteLine(" | MP {0},{1}", i, j);
                                     break;
-                                case 5: Console.WriteLine(" | HS {0},{1}", i, j); break;
+                                case 2: c.type = "MT"; c.num.Add(i); c.num.Add(j); Console.WriteLine(" | MT {0},{1}", i, j);
+                                    break;
+                                case 3: c.type = "DS"; c.num.Add(i); c.num.Add(j); Console.WriteLine(" | DS {0},{1}", i, j);
+                                    break;
+                                case 4: c.type = "CON"; c.num.Add(i); c.num.Add(j); Console.WriteLine(" | CON {0},{1}", i, j);
+                                    break;
+                                case 5: c.type = "HS"; c.num.Add(i); c.num.Add(j); Console.WriteLine(" | HS {0},{1}", i, j);
+                                    break;
                                 case 6: break;
                             }
+
+                            clauses.Add(c);
+                           
+                            if (tempResult == "0")
+                            {
+                                Console.WriteLine("FAULT");
+                                return;
+                            }
+
                             if (tempResult == result)
                             {
                                 Console.WriteLine("TRUE");
                                 return;
                             }
-                            i = 0; j = 0;
+                            i = 0;
                         }
                     }
 
@@ -1231,40 +1357,109 @@ namespace LogicClause
                             if (!clause.Any(item => item == DILResult))
                             {
                                 clause.Add(DILResult);
-                                Console.WriteLine("{0}. {1} | DIL {2},{3},{4}",clause.Count - 1,DILResult,i,j,k);
-                                if(DILResult == result)
+
+                                MyClause c = new MyClause();
+                                c.content = DILResult;
+                                c.type = "DIL";
+                                c.id = clause.Count - 1;
+                                c.num.Add(i); c.num.Add(j); c.num.Add(k);
+                                clauses.Add(c);
+                                
+                                Console.WriteLine("{0}. {1} | DIL {2},{3},{4}", clause.Count - 1, DILResult, i, j, k);
+                                if (DILResult == result)
                                 {
                                     Console.WriteLine("TRUE");
                                     return;
                                 }
-                                i = 0; j = 0;k = 0;
+                                i = 0; j = 0;
                             }
-                            
+
                         }
 
                     }
                 }
             }
+        }
 
-            Console.WriteLine("------");
-            for(int i = 0; i < clause.Count; i++)
+        public class MyClause
+        {
+            public string type { get; set; }
+            public List<int> num { get; set; }
+            public string content { get; set; }
+            public int id { get; set; }
+
+            public MyClause()
             {
-                Console.WriteLine("{0}. {1}",i,clause[i]);
+                num = new List<int>();
             }
-            Console.WriteLine("------");
+        }
+
+        static public void exportResult(List<MyClause> clauses)
+        {
+            List<MyClause> steps = new List<MyClause>();
+            steps.Add(clauses[clauses.Count - 1]);
+            int newCount = -1;
+            int i = 0;
+
+            //Thêm các phần tử có liên quan tới mệnh đề kết quả vào mảng "steps"
+            while (i != newCount)
+            {
+                foreach(int item in steps[i].num)
+                {
+                    if(!steps.Any(temp => temp == clauses[item]))
+                    {
+                        steps.Add(clauses[item]);
+                    }
+                }
+                i++;
+                newCount = steps.Count;
+            }
+
+            //Sắp xếp lại các phần tử
+            List<MyClause> SortedList = steps.OrderBy(o => o.id).ToList();
+
+            //Chỉnh sửa thuộc tính 'num' trong mỗi phần tử
+            for (int index = 0; index < SortedList.Count; index++)
+            {
+                for (int k = 0; k < SortedList[index].num.Count; k++)
+                {
+                    for (int j = 0; j < SortedList.Count; j++)
+                    {
+                        if (SortedList[index].num[k] == SortedList[j].id)
+                        {
+                            SortedList[index].num[k] = j;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            //Xuất ra màn hình kết quả cuối cùng
+            Console.WriteLine("{0,-7} {1,-20} {2,-7}", "Serial", "Clause", "Reason");
+
+            for (int index = 0;index < SortedList.Count; index++)
+            {
+                Console.Write("{0,-7}|{1,-20}|{2,-7}|", index, SortedList[index].content, SortedList[index].type);
+                
+                foreach(var item in SortedList[index].num)
+                {
+                    Console.Write(" {0,-3}",item);
+                }
+                Console.WriteLine();
+            }
         }
 
         static void Main(string[] args)
         {
 
             List<string> t = new List<string>();
-            t.Add("A+(-B)+(-D)");
-            t.Add("(E.F)>D");
-            t.Add("-A");
-            t.Add("F.E");
+            t.Add("(A+B)>(C+D)");
+            t.Add("C>E");
+            t.Add("C+(-F)");
+            t.Add("F+(D>Z)");
+            t.Add("A.(-E)");
 
-
-            string result = "-B";
+            string result = "Z";
 
             for (int i = 0; i < t.Count; i++)
             {
@@ -1272,21 +1467,12 @@ namespace LogicClause
             }
             Console.WriteLine("------------");
 
-            handleClause(t, result);
+            List<MyClause> c = new List<MyClause>();
+            handleClause(t, result,ref c);
 
-            //string t = "-((-P).(-((-N)+(-O))))";
-            //Console.WriteLine(t);
-            //List<string> test = EQ(t);
-            //foreach (var item in test)
-            //{
-            //    Console.WriteLine(item);
-            //}
-
-            //List<int> test = findIndexSubstring("Em di hoc va di hoc hehe", "hoc");
-            //foreach(var item in test)
-            //{
-            //    Console.WriteLine(item);
-            //}
+            Console.WriteLine();
+            Console.ReadKey();
+            exportResult(c);
             Console.ReadKey();
         }
     }
