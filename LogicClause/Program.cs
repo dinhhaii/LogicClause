@@ -2075,46 +2075,116 @@ namespace LogicClause
             }
         }
 
-        static void Main(string[] args)
+        public static void inputClause(ref List<string> clauses, out string result)
         {
-            int choose;
-            List<string> t = new List<string>();
-   
-                Console.WriteLine("Input clause (:");
-
-
-                t.Add("(A+B)>X");
-                //t.Add("A");
-                //t.Add("(-X).(-Y)");
-                //t.Add("F");
-                //t.Add("H");
-
-                string result = "A>X";
-
-                for (int i = 0; i < t.Count; i++)
+            string input = "";
+            result = "";
+            clauses = new List<string>();
+            Console.WriteLine("Nhap cac menh de (nhap '=' de nhap cau ket luan, nhap 'quit' de thoat):");
+            while (true)
+            {
+                input = Console.ReadLine();
+                if (input == "=")
                 {
-                    Console.WriteLine(i.ToString() + ". " + t[i]);
+                    Console.WriteLine("Nhap cau ket luan:");
+                    result = Console.ReadLine();
+                    break;
                 }
-                Console.WriteLine("------------");
-                Console.WriteLine(result);
-
-
-
-
-                Console.WriteLine("Processing ...\n");
-
-                List<MyClause> c = new List<MyClause>();
-                Stack<string> s = new Stack<string>();
-                if (handleClauseCounter(t,result,ref c))
+                else if(input == "quit")
                 {
-                    exportResultCondition(c, result, s);
+                    clauses.Clear();
+                    break;
                 }
                 else
                 {
-                    Console.WriteLine("FALSE");
+                    clauses.Add(input);
                 }
-            
+            }
 
+        }
+
+
+        static void Main(string[] args)
+        {
+            int choose = -1;
+            List<string> clauses = new List<string>();
+            List<string> tempClauses = null;
+            string result = "";
+
+            while (choose != 0)
+            {
+                if(clauses.Count == 0 || clauses == null)
+                {
+                    Console.WriteLine("\n========================================================================");
+                    inputClause(ref clauses,out result);
+                    if(clauses.Count == 0)
+                    {
+                        return;
+                    }
+                    tempClauses = new List<string>(clauses);
+                }
+                clauses = new List<string>(tempClauses);
+                Console.WriteLine("\n========================================================================");
+                Console.WriteLine("------TIEN DE & KET LUAN------");
+                for (int i = 0; i < tempClauses.Count; i++)
+                {
+                    Console.WriteLine(i.ToString() + ". " + tempClauses[i]);
+                }
+                Console.WriteLine(result);
+
+                Console.WriteLine("\n------LUA CHON------");
+                Console.WriteLine("1. Quy tac suy dien, tuong duong");
+                Console.WriteLine("2. Chung minh dieu kien");
+                Console.WriteLine("3. Chung minh phan chung");
+                Console.WriteLine("4. Nhap menh de moi");
+                Console.WriteLine("5. Thoat");
+
+                Console.Write("\nLua chon: ");
+                choose = int.Parse(Console.ReadLine());
+
+                List<MyClause> myClauses = new List<MyClause>();
+                Stack<string> s = new Stack<string>();
+
+                switch (choose)
+                {
+                    case 1:
+                        Console.WriteLine("\nProcessing ...\n");
+                        if (handleClause(clauses, result, ref myClauses))
+                        {
+                            exportResult(myClauses);
+                        }
+                        else
+                        {
+                            Console.WriteLine("FALSE");
+                        }
+                        break;
+                    case 2:
+                        Console.WriteLine("\nProcessing ...\n");
+                        if (handleClauseCondition(clauses, result, ref myClauses, ref s))
+                        {
+                            exportResultCondition(myClauses, result, s);
+                        }
+                        else
+                        {
+                            Console.WriteLine("FALSE");
+                        }
+                        break;
+                    case 3:
+                        Console.WriteLine("\nProcessing ...\n");
+                        if (handleClauseCounter(clauses, result, ref myClauses))
+                        {
+                            exportResult(myClauses);
+                        }
+                        else
+                        {
+                            Console.WriteLine("TRUE");
+                        }
+                        break;
+                    case 4: clauses.Clear(); break;
+                    default: return;
+                }
+            }
+           
             Console.ReadKey();
         }
     }
